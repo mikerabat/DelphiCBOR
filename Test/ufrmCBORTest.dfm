@@ -24,7 +24,7 @@ object frmCBORTest: TfrmCBORTest
   object btnOpen: TButton
     Left = 368
     Top = 30
-    Width = 75
+    Width = 92
     Height = 25
     Caption = 'Open'
     TabOrder = 1
@@ -40,10 +40,19 @@ object frmCBORTest: TfrmCBORTest
   object btnEncode: TButton
     Left = 368
     Top = 72
-    Width = 75
+    Width = 92
     Height = 25
     Caption = 'Test Encode'
     TabOrder = 3
     OnClick = btnEncodeClick
+  end
+  object Button1: TButton
+    Left = 368
+    Top = 112
+    Width = 92
+    Height = 25
+    Caption = 'Write RFC Tests'
+    TabOrder = 4
+    OnClick = Button1Click
   end
 end

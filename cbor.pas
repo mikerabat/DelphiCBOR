@@ -25,7 +25,11 @@ unit cbor;
 // integer values.
 
 // the library uses some stuff from the indy project namely the base64 encoders/decoders
-//
+
+// a limitation of this little library is that the negivative number actually uses an
+// int64 to encode the negative values -> negative values below -2^63 will raise exceptions
+
+// simple value opcode `$f7 is not implemented -> it's undefined in the original RFC
 
 interface
 
@@ -1609,6 +1613,9 @@ begin
                   raise ECborDecodeError.Create('Error decoding the array');
              end;
         end;
+
+        // read the final break
+        stream.ReadBuffer(opCode, sizeof(opCode));
      except
            Result.Free;
            raise;
@@ -1788,9 +1795,8 @@ begin
 end;
 
 function DecodeChunkedMap( stream : TStream ) : TCborItem;
-var item : TCborMap;
-    cnt : integer;
-    opCode : byte;
+var opCode : byte;
+    name, value : TCborItem;
 begin
      stream.ReadBuffer(opCode, sizeof(opcode));
 
@@ -1798,17 +1804,15 @@ begin
      try
         while PeekFromStream(stream, opCode) <> cCBORBreak do
         begin
-             item := TCborDecoding.cborDecodeTbl[ opCode ]( stream ) as TCborMap;
+             name := TCborDecoding.cborDecodeTbl[ opCode ]( stream );
+             PeekFromStream(stream, opCode);
+             value := TCborDecoding.cborDecodeTbl[ opCode ]( stream );
 
-             try
-                item.fNames.OwnsObjects := False;
-                item.fvalue.OwnsObjects := False;
-                for cnt := 0 to item.fNames.Count - 1 do
-                     TCborMap(Result).Add(item.fNames[cnt], item.fvalue[cnt]);
-             finally
-                    item.Free;
-             end;
+             TCborMap(Result).Add(name, value);
         end;
+
+        // read final break
+        stream.ReadBuffer(opCode, sizeof(opcode));
      except
            Result.Free;
            raise;
@@ -1936,17 +1940,19 @@ begin
      // int list
      for i := $80 to $97 do
          TCborDecoding.cborDecodeTbl[i] := DecodeShortIntList;
-     TCborDecoding.cborDecodeTbl[$98] := DecodeMediumIntList;
-     TCborDecoding.cborDecodeTbl[$99] := DecodeLongIntList;
-     TCborDecoding.cborDecodeTbl[$9A] := DecodeLongLongIntList;
+     TCborDecoding.cborDecodeTbl[$98] := DecodeSmallIntList;
+     TCborDecoding.cborDecodeTbl[$99] := DecodeMediumIntList;
+     TCborDecoding.cborDecodeTbl[$9A] := DecodeLongIntList;
+     TCborDecoding.cborDecodeTbl[$9B] := DecodeLongLongIntList;
      TCborDecoding.cborDecodeTbl[$9F] := DecodeChunkedIntList;
 
      // maps
      for i := $A0 to $B7 do
          TCborDecoding.cborDecodeTbl[i] := DecodeShortMap;
-     TCborDecoding.cborDecodeTbl[$B8] := DecodeMediumMap;
-     TCborDecoding.cborDecodeTbl[$B9] := DecodeLongMap;
-     TCborDecoding.cborDecodeTbl[$BA] := DecodeLongLongMap;
+     TCborDecoding.cborDecodeTbl[$B8] := DecodeSmallIntMap;
+     TCborDecoding.cborDecodeTbl[$B9] := DecodeMediumMap;
+     TCborDecoding.cborDecodeTbl[$BA] := DecodeLongMap;
+     TCborDecoding.cborDecodeTbl[$BB] := DecodeLongLongMap;
      TCborDecoding.cborDecodeTbl[$BF] := DecodeChunkedMap;
 
      for i := $E0 to $F3 do

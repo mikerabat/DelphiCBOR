@@ -31,3 +31,7 @@ as full strings.
 
 There is no reading from a stream implemented which pushes CBOR objects as they arrive in the stream - there was simply
 no known use case for me here (but hey if one knows one then let me know ;)
+
+The negative integer element is implemented as the integral Delphi type in64. This means that there may be problems with
+values lower the -2^63 -> cbor actually uses -1 - UINT64(value) which allows up to -2^64 values. Since there is no built in
+Delphi routines that can handle these values the support was cropped.

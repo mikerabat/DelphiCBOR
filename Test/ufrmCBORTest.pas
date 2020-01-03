@@ -28,8 +28,10 @@ type
     btnOpen: TButton;
     memLog: TMemo;
     btnEncode: TButton;
+    Button1: TButton;
     procedure btnOpenClick(Sender: TObject);
     procedure btnEncodeClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
   public
     { Public-Deklarationen }
@@ -40,7 +42,7 @@ var
 
 implementation
 
-uses superObject, cbor;
+uses superObject, cbor, cborExamples, Types;
 
 {$R *.dfm}
 
@@ -143,6 +145,37 @@ begin
         end;
      finally
             encList.Free;
+     end;
+end;
+
+procedure TfrmCBORTest.Button1Click(Sender: TObject);
+var i : integer;
+    cbor : TByteDynArray;
+begin
+     memLog.Lines.Clear;
+
+     for i := 0 to GetExampleCnt - 1 do
+     begin
+          memLog.Lines.Add('Test ' + IntToStr(i + 1) + ':' );
+
+          cbor := GetExample(i);
+
+          try
+          with TCborDecoding.DecodeData( @cbor[0], Length(cbor) ) do
+          try
+             memLog.Lines.Add( ToString );
+          finally
+                 Free;
+          end;
+          except
+          with TCborDecoding.DecodeData( @cbor[0], Length(cbor) ) do
+          try
+             memLog.Lines.Add( ToString );
+          finally
+                 Free;
+          end;
+
+          end;
      end;
 end;
 
