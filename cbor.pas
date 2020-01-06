@@ -69,7 +69,7 @@ type
     procedure CBOREncode( toStream : TStream ); override;
     function ToString : string; override;
 
-    property Value :UInt64 read fUIntVal;
+    property Value : UInt64 read fUIntVal;
 
     constructor Create( uVal : UInt64 );
   end;
@@ -91,8 +91,10 @@ type
     fbyteStr : RawByteString;
   public
     function ToString : string; override;
-
     procedure CBOREncode( toStream : TStream ); override;
+    function ToBytes : TBytes;
+
+    property Value : RawByteString read fbyteStr;
 
     constructor Create( str : RawByteString );
   end;
@@ -105,6 +107,8 @@ type
   public
     procedure CBOREncode( toStream : TStream ); override;
     function ToString : string; override;
+
+    property Value : UTF8String read futfStr;
 
     constructor Create( str : UTF8String );
   end;
@@ -135,6 +139,7 @@ type
     function GetCount: integer;
     function GetName(index: integer): TCborItem;
     function GetValue(index: integer): TCborItem;
+    function GetValueByName(name: string): TCborItem;
   public
     procedure Add( name : TCborItem; value : TCborItem );
 
@@ -144,6 +149,7 @@ type
     property Count : integer read GetCount;
     property Names[ index : integer ] : TCborItem read GetName;
     property Values[ index : integer ] : TCborItem read GetValue;
+    property ValueByName[ name : string ] : TCborItem read GetValueByName;
 
     constructor Create;
     destructor Destroy; override;
@@ -158,6 +164,8 @@ type
     procedure CBOREncode( toStream : TStream ); override;
     function ToString : string; override;
 
+    property Value : double read ffloatVal;
+
     constructor Create( val : Double );
   end;
 
@@ -168,6 +176,8 @@ type
   public
     procedure CBOREncode( toStream : TStream ); override;
     function ToString : string; override;
+
+    property Value : boolean read fBoolVal;
 
     constructor Create( val : boolean );
   end;
@@ -184,6 +194,8 @@ type
   public
     procedure CBOREncode( toStream : TStream ); override;
     function ToString : string; override;
+
+    property Value : byte read fSimpleVal;
 
     constructor Create( aVal : byte );
   end;
@@ -218,12 +230,25 @@ type
     // decoding a stream (e.g. file)
     class function Decode( stream : TStream ) : TCborItem;
     // naked pointer based decoding
-    class function DecodeData( data : PByte; len : integer ) : TCborItem;
+    class function DecodeData( data : PByte; len : integer ) : TCborItem; overload;
+    class function DecodeData( data : RawByteString ) : TCborItem; overload;
+    class function DecodeData( data : PByte; len : integer; var bytesDecoded : integer ) : TCborItem; overload;
+    class function DecodeData( data : RawByteString; var bytesDecoded : integer ) : TCborItem; overload;
+
 
     // base64 data or base634url encoded data
     class function DecodeBase64( data : String ) : TCborItem;
     class function DecodeBase64Url( data : String ) : TCborItem;
   end;
+
+
+function Base64Decode( s : string ) : RawByteString;
+function Base64URLDecode( s : String ) : RawByteString;
+function Base64URLEncode( aData : RawByteString ) : String; overload;
+function Base64URLEncode( pData : PByte; len : integer ) : string; overload;
+function Base64Encode( aData : RawByteString ) : String; overload;
+function Base64Encode( pData : PByte; len : integer ) : string; overload;
+
 
 implementation
 
@@ -264,11 +289,19 @@ end;
 // this function uses the standard base64 encoding and basically strips the
 // trailing == as well as changes the '+' and '/' elemets (uri compatiblilty)
 function Base64URLEncode( aData : RawByteString ) : String;
+begin
+     Result := Base64URLEncode( PByte( PAnsiChar( aData ) ), Length(aData) );
+end;
+
+function Base64URLEncode( pData : PByte; len : integer ) : string;
 var sFixup : string;
     wrapMem : TWrapMemoryStream;
     i : integer;
 begin
-     wrapMem := TWrapMemoryStream.Create( PByte(PAnsiChar(aData)), Length(aData) );
+     if len = 0 then
+        exit('');
+
+     wrapMem := TWrapMemoryStream.Create( pData, len );
      try
         with TIdEncoderMIME.Create(nil) do
         try
@@ -293,6 +326,29 @@ begin
      end;
 
      Result := sFixup;
+end;
+
+function Base64Encode( aData : RawByteString ) : String;
+begin
+     Result := Base64Encode( PByte( PAnsiChar( aData ) ), length(aData) );
+end;
+
+function Base64Encode( pData : PByte; len : integer ) : string;
+var sFixup : string;
+    wrapMem : TWrapMemoryStream;
+    i : integer;
+begin
+     wrapMem := TWrapMemoryStream.Create( pData, len );
+     try
+        with TIdEncoderMIME.Create(nil) do
+        try
+           Result := Encode( wrapMem );
+        finally
+               Free;
+        end;
+     finally
+            wrapMem.Free;
+     end;
 end;
 
 function Base64Decode( s : string ) : RawByteString;
@@ -501,14 +557,33 @@ end;
 
 class function TCborDecoding.DecodeData(data: PByte;
   len: integer): TCborItem;
+var dummy : integer;
+begin
+     Result := DecodeData(data, len, dummy);
+end;
+
+class function TCborDecoding.DecodeData(data: RawByteString;
+  var bytesDecoded: integer): TCborItem;
+begin
+     Result := DecodeData( PByte( PAnsiChar( data ) ), Length(data), bytesDecoded );
+end;
+
+class function TCborDecoding.DecodeData(data: PByte; len: integer;
+  var bytesDecoded: integer): TCborItem;
 var memStream : TWrapMemoryStream;
 begin
      memStream := TWrapMemoryStream.Create(data, len);
      try
         Result := Decode(memStream);
+        bytesDecoded := Integer(memStream.Position);
      finally
             memStream.Free;
      end;
+end;
+
+class function TCborDecoding.DecodeData(data: RawByteString): TCborItem;
+begin
+     Result := DecodeData( PByte( PAnsiChar( data ) ), Length(data) );
 end;
 
 class function TCborDecoding.DecodeBase64(data: String): TCborItem;
@@ -703,6 +778,25 @@ end;
 function TCborMap.GetValue(index: integer): TCborItem;
 begin
      Result := fvalue[index];
+end;
+
+function TCborMap.GetValueByName(name: string): TCborItem;
+var s : string;
+  i: Integer;
+begin
+     // works only for utf names
+     Result := nil;
+     for i := 0 to GetCount - 1 do
+     begin
+          if (Names[i] is TCborUtf8String) then
+          begin
+               if SameStr( String((Names[i] as TCborUtf8String).Value), name) then
+               begin
+                    Result := fvalue[i];
+                    break;
+               end;
+          end;
+     end;
 end;
 
 { TCborArr }
@@ -958,6 +1052,13 @@ begin
 
      if len > 0 then
         toStream.WriteBuffer( fByteStr[1], len);
+end;
+
+function TCborByteString.ToBytes: TBytes;
+begin
+     SetLength( Result, Length(fbyteStr));
+     if Length(fbyteStr) > 0 then
+        Move( fByteStr[1], Result[0], Length(fbyteStr));
 end;
 
 { TCborNegIntItem }
@@ -2135,6 +2236,4 @@ RFC 7049                          CBOR                      October 2013
    | 0xff            | "break" stop code                               |
    +-----------------+-------------------------------------------------+
    *)
-
-
 end.
