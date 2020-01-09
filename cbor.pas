@@ -334,9 +334,7 @@ begin
 end;
 
 function Base64Encode( pData : PByte; len : integer ) : string;
-var sFixup : string;
-    wrapMem : TWrapMemoryStream;
-    i : integer;
+var wrapMem : TWrapMemoryStream;
 begin
      wrapMem := TWrapMemoryStream.Create( pData, len );
      try
@@ -781,8 +779,7 @@ begin
 end;
 
 function TCborMap.GetValueByName(name: string): TCborItem;
-var s : string;
-  i: Integer;
+var i: Integer;
 begin
      // works only for utf names
      Result := nil;
