@@ -239,6 +239,7 @@ type
     // base64 data or base634url encoded data
     class function DecodeBase64( data : String ) : TCborItem;
     class function DecodeBase64Url( data : String ) : TCborItem;
+    class function DecodeBase64UrlEx( data : string; var restBuffer : TBytes ) : TCborItem;
   end;
 
 
@@ -603,6 +604,24 @@ begin
      if decoded <> '' then
         Result := DecodeData( PByte(PAnsiChar(decoded)), Length(decoded));
 end;
+
+class function TCborDecoding.DecodeBase64UrlEx(data: string;
+  var restBuffer: TBytes): TCborItem;
+var decoded : RawByteString;
+    bytesDecoded : integer;
+begin
+     decoded := Base64URLDecode(data);
+     Result := nil;
+
+     bytesDecoded := 0;
+     if decoded <> '' then
+        Result := DecodeData( PByte(PAnsiChar(decoded)), Length(decoded), bytesDecoded);
+
+     SetLength( restBuffer, length(decoded) - bytesDecoded );
+     if Length(restBuffer) > 0 then
+        Move( decoded[bytesDecoded], restBuffer[0], Length(restBuffer));
+end;
+
 
 // ##############################################################
 // #### cbor objects
