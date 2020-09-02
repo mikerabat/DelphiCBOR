@@ -146,6 +146,8 @@ type
     procedure CBOREncode( toStream : TStream ); override;
     function ToString : string; override;
 
+    function IndexOfName( name : string ) : integer;
+
     property Count : integer read GetCount;
     property Names[ index : integer ] : TCborItem read GetName;
     property Values[ index : integer ] : TCborItem read GetValue;
@@ -245,6 +247,8 @@ type
 
 function Base64Decode( s : string ) : RawByteString;
 function Base64URLDecode( s : String ) : RawByteString;
+function Base64URLDecodeToBytes( s : String ) : TBytes;
+function Base64URLEncode( aData : String ) : string; overload;
 function Base64URLEncode( aData : RawByteString ) : String; overload;
 function Base64URLEncode( pData : PByte; len : integer ) : string; overload;
 function Base64Encode( aData : RawByteString ) : String; overload;
@@ -292,6 +296,16 @@ end;
 function Base64URLEncode( aData : RawByteString ) : String;
 begin
      Result := Base64URLEncode( PByte( PAnsiChar( aData ) ), Length(aData) );
+end;
+
+function Base64URLEncode( aData : String ) : string; overload;
+var s : UTF8String;
+begin
+     s := UTF8String(aData);
+     Result := '';
+
+     if s <> '' then
+        Result := Base64URLEncode( @s[1], Length(s) );
 end;
 
 function Base64URLEncode( pData : PByte; len : integer ) : string;
@@ -362,17 +376,47 @@ end;
 
 function Base64URLDecode( s : String ) : RawByteString;
 var sFixup : string;
+    aWrapStream : TWrapMemoryStream;
+    sconvStr : UTF8String;
+    lStream : TMemoryStream;
 begin
      // fixup
      sfixup := String(s) + StringOfChar( '=', (4 - Length(s) mod 4) mod 4 );
      sFixup := stringReplace(sfixup, '-', '+', [rfReplaceAll]);
      sFixup := StringReplace(sfixup, '_', '/', [rfReplaceAll]);
 
-     with TIdDecoderMIME.Create(nil) do
+     sConvStr := UTF8String( sFixup );
+     aWrapStream := TWrapMemoryStream.Create( @sConvStr[1], Length(sConvStr) );
+     lStream := TMemoryStream.Create;
+
      try
-        Result := RawByteString( DecodeString(sFixup) );
+        with TIdDecoderMIME.Create(nil) do
+        try
+           DecodeBegin(lStream);
+           Decode( aWrapStream );
+           DecodeEnd;
+
+           SetLength(Result, lStream.Size );
+           if lStream.Size > 0 then
+                Move( PByte(lStream.Memory)^, Result[1], lStream.Size);
+        finally
+               Free;
+        end;
      finally
-            Free;
+            lStream.Free;
+     end;
+     aWrapStream.Free;
+end;
+
+function Base64URLDecodeToBytes( s : String ) : TBytes;
+var res : RawByteString;
+begin
+     res := Base64URLDecode( s );
+     Result := nil;
+     if res <> '' then
+     begin
+          SetLength(Result, Length(res));
+          Move( Res[1], Result[0], Length(Res));
      end;
 end;
 
@@ -597,9 +641,20 @@ end;
 
 class function TCborDecoding.DecodeBase64Url(data: String): TCborItem;
 var decoded : RawByteString;
+  i: integer;
 begin
      decoded := Base64URLDecode(data);
      Result := nil;
+
+     with TStringStream.Create('') do
+     try
+        for i := 1 to Length(decoded) do
+            WriteString(IntToHex( Byte( decoded[i]), 2 ) + ' ' );
+
+        SaveToFile('d:\cbor_attestObj.txt');
+     finally
+            Free;
+     end;
 
      if decoded <> '' then
         Result := DecodeData( PByte(PAnsiChar(decoded)), Length(decoded));
@@ -802,13 +857,39 @@ var i: Integer;
 begin
      // works only for utf names
      Result := nil;
+
+     i := IndexOfName(Name);
+     if i >= 0 then
+        Result := fValue[i];
+end;
+
+function TCborMap.IndexOfName(name: string): integer;
+var i : integer;
+begin
+     Result := -1;
      for i := 0 to GetCount - 1 do
      begin
           if (Names[i] is TCborUtf8String) then
           begin
                if SameStr( String((Names[i] as TCborUtf8String).Value), name) then
                begin
-                    Result := fvalue[i];
+                    Result := i;
+                    break;
+               end;
+          end
+          else if (Names[i] is TCborUINTItem) then
+          begin
+               if name = IntToStr( (Names[i] as TCborUINTItem).Value ) then
+               begin
+                    Result := i;
+                    break;
+               end;
+          end
+          else if (Names[i] is TCborNegIntItem) then
+          begin
+               if name = IntToStr( (Names[i] as TCborNegIntItem).Value ) then
+               begin
+                    Result := i;
                     break;
                end;
           end;
