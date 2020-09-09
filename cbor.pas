@@ -365,13 +365,31 @@ begin
 end;
 
 function Base64Decode( s : string ) : RawByteString;
+var aWrapStream : TWrapMemoryStream;
+    sconvStr : UTF8String;
+    lStream : TMemoryStream;
 begin
-     with TIdDecoderMIME.Create(nil) do
+     sConvStr := UTF8String( s );
+     aWrapStream := TWrapMemoryStream.Create( @sConvStr[1], Length(sConvStr) );
+     lStream := TMemoryStream.Create;
+
      try
-        Result := RawByteString( DecodeString(s) );
+        with TIdDecoderMIME.Create(nil) do
+        try
+           DecodeBegin(lStream);
+           Decode( aWrapStream );
+           DecodeEnd;
+
+           SetLength(Result, lStream.Size );
+           if lStream.Size > 0 then
+                Move( PByte(lStream.Memory)^, Result[1], lStream.Size);
+        finally
+               Free;
+        end;
      finally
-            Free;
+            lStream.Free;
      end;
+     aWrapStream.Free;
 end;
 
 function Base64URLDecode( s : String ) : RawByteString;
@@ -380,6 +398,9 @@ var sFixup : string;
     sconvStr : UTF8String;
     lStream : TMemoryStream;
 begin
+     if s = '' then
+        exit('');
+
      // fixup
      sfixup := String(s) + StringOfChar( '=', (4 - Length(s) mod 4) mod 4 );
      sFixup := stringReplace(sfixup, '-', '+', [rfReplaceAll]);
