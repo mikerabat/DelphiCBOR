@@ -254,6 +254,7 @@ function Base64URLEncode( pData : PByte; len : integer ) : string; overload;
 function Base64Encode( aData : RawByteString ) : String; overload;
 function Base64Encode( pData : PByte; len : integer ) : string; overload;
 
+function Base64UrlFixup(base64Str: string): string;
 
 implementation
 
@@ -291,6 +292,26 @@ begin
      raise Exception.Create('Not allowed');
 end;
 
+function Base64UrlFixup(base64Str: string): string;
+var sFixup : string;
+    i : integer;
+begin
+     // url encoding
+     sFixup := stringReplace(base64Str, '+', '-', [rfReplaceAll]);
+     sFixup := StringReplace(sfixup, '/', '_', [rfReplaceAll]);
+
+     // strip the '='
+     i := Length(sFixup);
+     while (i > 0) and (sfixup[i] = '=') do
+     begin
+          delete(sFixup, i, 1);
+          dec(i);
+     end;
+
+     Result := sFixup;
+end;
+
+
 // this function uses the standard base64 encoding and basically strips the
 // trailing == as well as changes the '+' and '/' elemets (uri compatiblilty)
 function Base64URLEncode( aData : RawByteString ) : String;
@@ -311,7 +332,6 @@ end;
 function Base64URLEncode( pData : PByte; len : integer ) : string;
 var sFixup : string;
     wrapMem : TWrapMemoryStream;
-    i : integer;
 begin
      if len = 0 then
         exit('');
@@ -328,19 +348,7 @@ begin
             wrapMem.Free;
      end;
 
-     // url encoding
-     sFixup := stringReplace(sfixup, '+', '-', [rfReplaceAll]);
-     sFixup := StringReplace(sfixup, '/', '_', [rfReplaceAll]);
-
-     // strip the '='
-     i := Length(sFixup);
-     while (i > 0) and (sfixup[i] = '=') do
-     begin
-          delete(sFixup, i, 1);
-          dec(i);
-     end;
-
-     Result := sFixup;
+     Result := Base64UrlFixup(sFixup);
 end;
 
 function Base64Encode( aData : RawByteString ) : String;
