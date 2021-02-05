@@ -724,7 +724,11 @@ end;
 function TCborFloat.ToString: string;
 var fmt : TFormatSettings;
 begin
-     GetLocaleFormatSettings(0, fmt);
+     {$IF (CompilerVersion <= 21)}
+     GetLocaleFormatSettings(0, Result);
+     {$ELSE}
+     fmt := TFormatSettings.Create;
+     {$IFEND}
      fmt.DecimalSeparator := '.';
      Result := FormatFloat( '%f', fFloatVal, fmt);
 end;
