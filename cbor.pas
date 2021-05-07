@@ -725,7 +725,7 @@ function TCborFloat.ToString: string;
 var fmt : TFormatSettings;
 begin
      {$IF (CompilerVersion <= 21)}
-     GetLocaleFormatSettings(0, Result);
+     GetLocaleFormatSettings(0, fmt);
      {$ELSE}
      fmt := TFormatSettings.Create;
      {$IFEND}
