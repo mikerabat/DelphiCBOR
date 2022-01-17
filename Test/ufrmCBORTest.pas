@@ -28,10 +28,10 @@ type
     btnOpen: TButton;
     memLog: TMemo;
     btnEncode: TButton;
-    Button1: TButton;
+    btnRFCTests: TButton;
     procedure btnOpenClick(Sender: TObject);
     procedure btnEncodeClick(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
+    procedure btnRFCTestsClick(Sender: TObject);
   private
   public
     { Public-Deklarationen }
@@ -140,6 +140,15 @@ begin
         fs := TFileStream.Create('D:\cbor.bin', fmCreate or fmOpenWrite);
         try
            encList.CBOREncode( fs );
+
+           memLog.Lines.Add( encList.ToString );
+           memLog.Lines.Add('');
+           memLog.Lines.Add('Reimported:');
+
+           fs.Position := 0;
+           FreeAndNil(encList);
+           encList := TCborDecoding.Decode( fs ) as TCborArr;
+           memLog.Lines.Add(encList.ToString);
         finally
                fs.Free;
         end;
@@ -148,7 +157,7 @@ begin
      end;
 end;
 
-procedure TfrmCBORTest.Button1Click(Sender: TObject);
+procedure TfrmCBORTest.btnRFCTestsClick(Sender: TObject);
 var i : integer;
     cbor : TByteDynArray;
 begin

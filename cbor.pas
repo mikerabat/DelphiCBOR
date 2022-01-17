@@ -1108,6 +1108,7 @@ begin
           opCode := $79;
           toStream.WriteBuffer(opCode, sizeof(opCode));
           wLen := Word(len);
+          RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
      else if len <= High(LongWord) then
@@ -1115,6 +1116,7 @@ begin
           opCode := $7A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
           dwLen := LongWord(len);
+          RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
      else
@@ -1168,6 +1170,7 @@ begin
           opCode := $59;
           toStream.WriteBuffer(opCode, sizeof(opCode));
           wLen := Word(len);
+          RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
      else if len <= High(LongWord) then
@@ -1175,6 +1178,7 @@ begin
           opCode := $5A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
           dwLen := LongWord(len);
+          RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
      else

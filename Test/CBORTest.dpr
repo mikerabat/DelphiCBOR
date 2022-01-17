@@ -1,6 +1,7 @@
 program CBORTest;
 
 uses
+  madExcept,
   Forms,
   ufrmCBORTest in 'ufrmCBORTest.pas' {frmCBORTest},
   cbor in '..\cbor.pas',

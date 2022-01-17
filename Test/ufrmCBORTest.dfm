@@ -46,13 +46,13 @@ object frmCBORTest: TfrmCBORTest
     TabOrder = 3
     OnClick = btnEncodeClick
   end
-  object Button1: TButton
+  object btnRFCTests: TButton
     Left = 368
     Top = 112
     Width = 92
     Height = 25
     Caption = 'Write RFC Tests'
     TabOrder = 4
-    OnClick = Button1Click
+    OnClick = btnRFCTestsClick
   end
 end
