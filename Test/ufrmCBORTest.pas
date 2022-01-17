@@ -127,6 +127,10 @@ begin
         map.Add( TCborUTF8String.Create('test2'), TCborUtf8String.Create('Hallo _ Hallo Hallo _ Hallo Hallo _ Hallo Hallo _ Hallo'));
         map.Add( TCborUtf8String.Create('Test3'), TCborFloat.Create(1.221) );
         map.Add( TCborUtf8String.Create('Test3'), TCborByteString.Create('1.221') );
+        map.Add( TCborUtf8String.Create('ShortUtf8'), TCborUTF8String.Create(UTF8String( StringOfChar('A', 129) ) ) );
+        map.Add( TCborUtf8String.Create('MedUtf8'), TCborUTF8String.Create(UTF8String( StringOfChar('B', 257) ) ) );
+        map.Add( TCborUtf8String.Create('ShortRawStr'), TCborByteString.Create( RawByteString( StringOfChar('X', 129) ) ) );
+        map.Add( TCborUtf8String.Create('MedRawStr'), TCborByteString.Create( RawByteString( StringOfChar('Y', 257) ) ) );
 
         arr := TCborArr.Create;
         arr.Add( TCborUINTItem.Create(1));
