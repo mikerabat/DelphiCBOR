@@ -246,10 +246,12 @@ type
 
 
 function Base64Decode( s : string ) : RawByteString;
+function Base64DecodeToBytes( s : string ) : TBytes;
 function Base64URLDecode( s : String ) : RawByteString;
 function Base64URLDecodeToBytes( s : String ) : TBytes;
 function Base64URLEncode( aData : String ) : string; overload;
 function Base64URLEncode( aData : RawByteString ) : String; overload;
+function Base64URLEncode( aData : TBytes ) : String; overload;
 function Base64URLEncode( pData : PByte; len : integer ) : string; overload;
 function Base64Encode( aData : RawByteString ) : String; overload;
 function Base64Encode( pData : PByte; len : integer ) : string; overload;
@@ -317,6 +319,11 @@ end;
 function Base64URLEncode( aData : RawByteString ) : String;
 begin
      Result := Base64URLEncode( PByte( PAnsiChar( aData ) ), Length(aData) );
+end;
+
+function Base64URLEncode( aData : TBytes ) : String; overload;
+begin
+     Result := Base64URLEncode( @aData[0], Length(aData) );
 end;
 
 function Base64URLEncode( aData : String ) : string; overload;
@@ -390,7 +397,7 @@ begin
 
            SetLength(Result, lStream.Size );
            if lStream.Size > 0 then
-                Move( PByte(lStream.Memory)^, Result[1], lStream.Size);
+              Move( PByte(lStream.Memory)^, Result[1], lStream.Size);
         finally
                Free;
         end;
@@ -399,6 +406,35 @@ begin
      end;
      aWrapStream.Free;
 end;
+
+function Base64DecodeToBytes( s : string ) : TBytes;
+var aWrapStream : TWrapMemoryStream;
+    sconvStr : UTF8String;
+    lStream : TMemoryStream;
+begin
+     sConvStr := UTF8String( s );
+     aWrapStream := TWrapMemoryStream.Create( @sConvStr[1], Length(sConvStr) );
+     lStream := TMemoryStream.Create;
+
+     try
+        with TIdDecoderMIME.Create(nil) do
+        try
+           DecodeBegin(lStream);
+           Decode( aWrapStream );
+           DecodeEnd;
+
+           SetLength(Result, lStream.Size );
+           if lStream.Size > 0 then
+              Move( PByte(lStream.Memory)^, Result[0], lStream.Size);
+        finally
+               Free;
+        end;
+     finally
+            lStream.Free;
+     end;
+     aWrapStream.Free;
+end;
+
 
 function Base64URLDecode( s : String ) : RawByteString;
 var sFixup : string;
