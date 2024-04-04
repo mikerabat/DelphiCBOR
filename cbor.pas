@@ -39,6 +39,8 @@ type
   ECBorNotImplmented = class(Exception);
   ECborDecodeError = class(Exception);
 
+const cCborSerializationTag : Array[0..2] of byte = ($D9, $D9, $F7);
+
 // major cbor types. Note major type 7 actually is the "simple" value type with subtype
 // floating point, null and boolean
 type
@@ -230,7 +232,7 @@ type
     class procedure InitDecodeTable;
   public
     // decoding a stream (e.g. file)
-    class function Decode( stream : TStream ) : TCborItem;
+    class function Decode( stream : TStream; checkForCeborMagicNr : boolean = False ) : TCborItem;
     // naked pointer based decoding
     class function DecodeData( data : PByte; len : integer ) : TCborItem; overload;
     class function DecodeData( data : RawByteString ) : TCborItem; overload;
@@ -650,14 +652,24 @@ end;
 // #### cbor decoder
 // #################################################################
 
-class function TCborDecoding.Decode(stream: TStream): TCborItem;
+class function TCborDecoding.Decode(stream: TStream; checkForCeborMagicNr : boolean = False): TCborItem;
 var opCode : Byte;
+    hea : Array[0..2] of byte;
 begin
      InitDecodeTable;
 
      Result := nil;
      if (stream = nil) then
         exit;
+
+     if checkForCeborMagicNr then
+     begin
+          stream.ReadBuffer(hea, sizeof(hea));
+
+          // if no serialization header indicator is found just try the standard decoding
+          if not CompareMem( @hea[0], @cCborSerializationTag[0] ) then
+             stream.Seek(-sizeof(cCborSerializationTag), soCurrent);
+     end;
 
      PeekFromStream(stream, opCode);
      Result := cborDecodeTbl[ opCode ](stream);
