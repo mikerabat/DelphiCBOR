@@ -667,7 +667,7 @@ begin
           stream.ReadBuffer(hea, sizeof(hea));
 
           // if no serialization header indicator is found just try the standard decoding
-          if not CompareMem( @hea[0], @cCborSerializationTag[0] ) then
+          if not CompareMem( @hea[0], @cCborSerializationTag[0], sizeof(cCborSerializationTag) ) then
              stream.Seek(-sizeof(cCborSerializationTag), soCurrent);
      end;
 
