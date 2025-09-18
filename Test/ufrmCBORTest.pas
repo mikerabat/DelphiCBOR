@@ -99,13 +99,13 @@ begin
         encList.Add( TCborUINTItem.Create( 15 ) );
         encList.Add( TCborUINTItem.Create( $18 ) );
         encList.Add( TCborUINTItem.Create( High(Word) ) );
-        encList.Add( TCborUINTItem.Create( High(LongWord) ) );
+        encList.Add( TCborUINTItem.Create( High(UInt32) ) );
 
         encList.Add( TCborNegIntItem.Create( -1 ) );
         encList.Add( TCborNegIntItem.Create( -15 ) );
         encList.Add( TCborNegIntItem.Create( -$18 ) );
         encList.Add( TCborNegIntItem.Create( -High(Word) ) );
-        encList.Add( TCborNegIntItem.Create( -(High(LongWord) - 1) ) );
+        encList.Add( TCborNegIntItem.Create( -(High(UInt32) - 1) ) );
 
 
         // some arrays

@@ -491,16 +491,18 @@ end;
 // #### float 16 bit conversion from single and back
 // ##########################################################
 
+type
+  PUInt32 = ^UInt32; // not avail in Delphi 2010
 // based on: https://galfar.vevb.net/wp/2011/16bit-half-float-in-pascaldelphi/
 
 function FloatToHalf(Float: Single): Word;
-var Src: LongWord;
-    Sign, Exp, Mantissa: LongInt;
+var Src: UInt32;
+    Sign, Exp, Mantissa: Int32;
 begin
-     Src := PLongWord(@Float)^;
+     Src := PUint32(@Float)^;
      // Extract sign, exponent, and mantissa from Single number
      Sign := Src shr 31;
-     Exp := LongInt((Src and $7F800000) shr 23) - 127 + 15;
+     Exp := Int32((Src and $7F800000) shr 23) - 127 + 15;
      Mantissa := Src and $007FFFFF;
 
      if (Exp > 0) and (Exp < 30)
@@ -570,8 +572,8 @@ begin
 end;
 
 function HalfToFloat(Half: word): Single;
-var Dst, Sign, Mantissa: LongWord;
-    Exp: LongInt;
+var Dst, Sign, Mantissa: UInt32;
+    Exp: Int32;
 begin
      // Extract sign, exponent, and mantissa from half number
      Sign := Half shr 15;
@@ -583,7 +585,7 @@ begin
           // Common normalized number
           Exp := Exp + (127 - 15);
           Mantissa := Mantissa shl 13;
-          Dst := (Sign shl 31) or (LongWord(Exp) shl 23) or Mantissa;
+          Dst := (Sign shl 31) or (UInt32(Exp) shl 23) or Mantissa;
           // Result := Power(-1, Sign) * Power(2, Exp - 15) * (1 + Mantissa / 1024);
      end
      else if (Exp = 0) and (Mantissa = 0) then
@@ -604,7 +606,7 @@ begin
           // Now assemble normalized number
           Exp := Exp + (127 - 15);
           Mantissa := Mantissa shl 13;
-          Dst := (Sign shl 31) or (LongWord(Exp) shl 23) or Mantissa;
+          Dst := (Sign shl 31) or (UInt32(Exp) shl 23) or Mantissa;
           // Result := Power(-1, Sign) * Power(2, -14) * (Mantissa / 1024);
      end
      else if (Exp = 31) and (Mantissa = 0) then
@@ -618,7 +620,7 @@ begin
           Dst := (Sign shl 31) or $7F800000 or (Mantissa shl 13);
      end;
 
-     // Reinterpret LongWord as Single
+     // Reinterpret UInt32 as Single
      Result := PSingle(@Dst)^;
 end;
 
@@ -718,7 +720,7 @@ end;
 
 class function TCborDecoding.DecodeBase64Url(data: String): TCborItem;
 var decoded : RawByteString;
-  i: integer;
+    i: integer;
 begin
      decoded := Base64URLDecode(data);
      Result := nil;
@@ -727,8 +729,6 @@ begin
      try
         for i := 1 to Length(decoded) do
             WriteString(IntToHex( Byte( decoded[i]), 2 ) + ' ' );
-
-        SaveToFile('d:\cbor_attestObj.txt');
      finally
             Free;
      end;
@@ -874,7 +874,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : UInt32;
     i : Integer;
 begin
      len := fNames.Count;
@@ -899,11 +899,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(UInt32) then
      begin
           opCode := $BA;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := UInt32(len);
           RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1017,7 +1017,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : UInt32;
     i : Integer;
 begin
      len := farr.Count;
@@ -1042,11 +1042,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(UInt32) then
      begin
           opCode := $9A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := UInt32(len);
           RevertByteOrder( @dwLen, sizeof(dwLen) );
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1135,7 +1135,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : UInt32;
 begin
      len := length(futfStr);
 
@@ -1159,11 +1159,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(UInt32) then
      begin
           opCode := $7A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := UInt32(len);
           RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1197,7 +1197,7 @@ var len : int64;
     opCode : Byte;
     bLen : Byte;
     wLen : word;
-    dwLen : LongWord;
+    dwLen : UInt32;
 begin
      len := length(fbyteStr);
 
@@ -1221,11 +1221,11 @@ begin
           RevertByteOrder( @wLen, sizeof(wLen));
           toStream.WriteBuffer(wLen, sizeof(wLen));
      end
-     else if len <= High(LongWord) then
+     else if len <= High(UInt32) then
      begin
           opCode := $5A;
           toStream.WriteBuffer(opCode, sizeof(opCode));
-          dwLen := LongWord(len);
+          dwLen := UInt32(len);
           RevertByteOrder( @dwLen, sizeof(dwLen));
           toStream.WriteBuffer(dwLen, sizeof(dwLen));
      end
@@ -1264,7 +1264,7 @@ procedure TCborNegIntItem.CBOREncode(toStream: TStream);
 var opCode : Byte;
     bData : Byte;
     wData : Word;
-    dwData : LongWord;
+    dwData : UInt32;
     uIntVal : UINT64;
 begin
      uIntVal := abs( fnegIntVal + 1);
@@ -1290,10 +1290,10 @@ begin
           toStream.WriteBuffer(opCode, sizeof(opCode));
           toStream.WriteBuffer(wData, sizeof(wData));
      end
-     else if uIntVal <= High(LongWord) then
+     else if uIntVal <= High(UInt32) then
      begin
           opCode := $3A;
-          dwData := LongWord( uIntVal );
+          dwData := UInt32( uIntVal );
           RevertByteOrder(@dwData, sizeof(dwData));
           toStream.WriteBuffer(opCode, sizeof(opCode));
           toStream.WriteBuffer(dwData, sizeof(dwData));
@@ -1327,7 +1327,7 @@ procedure TCborUINTItem.CBOREncode(toStream: TStream);
 var opCode : Byte;
     bData : Byte;
     wData : Word;
-    dwData : LongWord;
+    dwData : UInt32;
     u64Data : UInt64;
 begin
      // determine "opcode"
@@ -1351,10 +1351,10 @@ begin
           RevertByteOrder(@wData, sizeof(wData));
           toStream.WriteBuffer(wData, sizeof(wData));
      end
-     else if fUIntVal <= High(LongWord) then
+     else if fUIntVal <= High(UInt32) then
      begin
           opCode := $1A;
-          dwData := LongWord( fUIntVal );
+          dwData := UInt32( fUIntVal );
           toStream.WriteBuffer(opCode, sizeof(opCode));
           RevertByteOrder(@dwData, sizeof(dwData));
           toStream.WriteBuffer(dwData, sizeof(dwData));
@@ -1507,9 +1507,9 @@ begin
 end;
 
 
-function DecodeLongWord( stream : TStream ) : TCborItem;
+function DecodeUInt32( stream : TStream ) : TCborItem;
 var opCode : byte;
-    val : Longword;
+    val : UInt32;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
      stream.ReadBuffer(val, sizeof(val));
@@ -1559,9 +1559,9 @@ begin
      Result := TCborNegIntItem.Create(-1 - integer(val));
 end;
 
-function DecodeNegLongWord( stream : TStream ) : TCborItem;
+function DecodeNegUInt32( stream : TStream ) : TCborItem;
 var opCode : byte;
-    val : LongWord;
+    val : UInt32;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
      stream.ReadBuffer(val, sizeof(val));
@@ -1627,7 +1627,7 @@ begin
 end;
 
 function DecodeLongLongString( stream : TStream ) : TCborItem;
-var len : Longword;
+var len : UInt32;
     opCode : byte;
     byteSTr : RawByteString;
 begin
@@ -1721,7 +1721,7 @@ begin
 end;
 
 function DecodeUTF8LongLongString( stream : TStream ) : TCborItem;
-var len : LongWord;
+var len : UInt32;
     opCode : byte;
     byteSTr : UTF8String;
 begin
@@ -1809,7 +1809,7 @@ end;
 
 function DecodeMediumIntList( stream : TStream ) : TCborItem;
 var len : word;
-    i : integer;
+    i : Int32;
     opCode : Byte;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode) );
@@ -1827,8 +1827,7 @@ begin
 end;
 
 function DecodeLongIntList( stream : TStream ) : TCborItem;
-var len : LongWord;
-    i : integer;
+var len : UInt32; // needs to be fixed to 32bit
     opCode : Byte;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode) );
@@ -1837,8 +1836,11 @@ begin
 
      Result := TCborArr.Create;
      try
-        for i := 0 to len - 1 do
-            TCborArr(Result).Add( TCborDecoding.cborDecodeTbl[ PeekFromStream(stream, opCode) ](stream) );
+        while len > 0 do
+        begin
+             TCborArr(Result).Add( TCborDecoding.cborDecodeTbl[ PeekFromStream(stream, opCode) ](stream) );
+             dec(len);
+        end;
      except
            Result.Free;
            raise;
@@ -1869,7 +1871,7 @@ end;
 function DecodeChunkedIntList( stream : TStream ) : TCborItem;
 var item : TCborItem;
     opCode : byte;
-    i:Integer;
+    i : Integer;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode) );
 
@@ -1975,7 +1977,7 @@ end;
 function DecodeMediumMap( stream : TStream ) : TCborItem;
 var opcode : byte;
     len : word;
-    i : integer;
+    i : Int32;
     name, value : TCborItem;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
@@ -2009,8 +2011,8 @@ end;
 
 function DecodeLongMap( stream : TStream ) : TCborItem;
 var opcode : byte;
-    len : Longword;
-    i : integer;
+    len : UInt32;
+    i : UInt32;
     name, value : TCborItem;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
@@ -2045,7 +2047,6 @@ end;
 function DecodeLongLongMap( stream : TStream ) : TCborItem;
 var opcode : byte;
     len : UInt64;
-    i : integer;
     name, value : TCborItem;
 begin
      stream.ReadBuffer(opCode, sizeof(opCode));
@@ -2053,9 +2054,8 @@ begin
      RevertByteOrder(@len, sizeof(len));
 
      Result := TCborMap.Create;
-     if len > 0 then
      try
-        for i := 0 to len - 1 do
+        while len > 0 do
         begin
              name := nil;
              value := nil;
@@ -2070,6 +2070,7 @@ begin
              end;
 
              TCborMap( Result ).Add( name, value );
+             dec(len);
         end;
      except
            Result.Free;
@@ -2191,7 +2192,7 @@ begin
          TCborDecoding.cborDecodeTbl[i] := DecodeTinyUInt;
      TCborDecoding.cborDecodeTbl[$18] := DecodeByte;
      TCborDecoding.cborDecodeTbl[$19] := DecodeWord;
-     TCborDecoding.cborDecodeTbl[$1A] := DecodeLongWord;
+     TCborDecoding.cborDecodeTbl[$1A] := DecodeUInt32;
      TCborDecoding.cborDecodeTbl[$1B] := DecodeUINT64;
 
      // neg int
@@ -2199,7 +2200,7 @@ begin
          TCborDecoding.cborDecodeTbl[i] := DecodeTinyNegInt;
      TCborDecoding.cborDecodeTbl[$38] := DecodeNegByte;
      TCborDecoding.cborDecodeTbl[$39] := DecodeNegWord;
-     TCborDecoding.cborDecodeTbl[$3A] := DecodeNegLongWord;
+     TCborDecoding.cborDecodeTbl[$3A] := DecodeNegUInt32;
      TCborDecoding.cborDecodeTbl[$3B] := DecodeNegUINT64;
 
      // strings
